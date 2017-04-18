@@ -12,6 +12,7 @@ namespace ApiReferenceCleanup
     class Program
     {
         private static readonly Regex XmlLine = new Regex("^((?:  )+)(<[^>]+>)(.*)(<[^>]+>)$", Compiled);
+        // TODO: recognize self-clsoing tags like <see cref="whatever" /> as one word
         private static readonly Regex XmlWord = new Regex(@"<([^ ]+)[^>]*?>[^<]*?</\1>[\S]*|<[^<]*?/>|[\S]+", Compiled);
         private static readonly Regex MdWord = new Regex(@"\[[^]]*?\]\([^)]*?\)[\S]*|[\S]+", Compiled);
         private static readonly Regex Prefix = new Regex(@"^ *(?:[-*>]|\d+\.|) *", Compiled);
