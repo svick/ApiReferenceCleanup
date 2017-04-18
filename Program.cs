@@ -20,13 +20,13 @@ namespace ApiReferenceCleanup
         static void Main()
         {
             string path = @"E:\Users\Svick\git\core-docs\xml";
-            int lineLengthLimit = 130;
+            int lineLengthLimit = 120;
 
             Console.WindowWidth = lineLengthLimit + 1;
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            foreach (var file in files.Skip(100).Take(30))
+            foreach (var file in files)
             {
                 //Console.WriteLine(file);
 
