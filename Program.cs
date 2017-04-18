@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using static System.IO.SearchOption;
 using static System.Text.RegularExpressions.RegexOptions;
 
-namespace ApiReferenceLongLines
+namespace ApiReferenceCleanup
 {
     class Program
     {
