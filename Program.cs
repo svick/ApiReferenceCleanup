@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using static System.IO.SearchOption;
 
@@ -21,29 +22,36 @@ namespace ApiReferenceCleanup
                 var outputLines = new List<string>();
 
                 bool cdata = false;
+                bool code = false;
 
                 foreach (var line in inputLines)
                 {
-                    if (!cdata)
+                    if (!code)
                     {
-                        outputLines.Add(line);
+                        if (!cdata)
+                        {
+                            outputLines.Add(line);
 
-                        if (line.Contains("<![CDATA["))
-                            cdata = true;
+                            if (line.Contains("<![CDATA["))
+                                cdata = true;
 
-                        continue;
+                            continue;
+                        }
+
+                        if (line.Contains("]]>"))
+                        {
+                            cdata = false;
+
+                            outputLines.Add(line);
+
+                            continue;
+                        }
                     }
 
-                    if (line.Contains("]]>"))
-                    {
-                        cdata = false;
+                    if (line.StartsWith("```"))
+                        code = !code;
 
-                        outputLines.Add(line);
-
-                        continue;
-                    }
-
-                    if (!line.StartsWith(" "))
+                    if (code || !line.StartsWith(" "))
                     {
                         outputLines.Add(line);
 
