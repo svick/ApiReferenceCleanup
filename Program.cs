@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using static System.IO.SearchOption;
 
 namespace ApiReferenceCleanup
@@ -9,9 +10,11 @@ namespace ApiReferenceCleanup
     {
         static void Main()
         {
-            string path = @"E:\Users\Svick\git\core-docs\xml";
+            string path = @"E:\Users\Svick\git\core-docs\xml\";
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
+
+            Regex codeWithoutSpace = new Regex(@"`[^ ]*(?<!`\|)`(?=\w)", RegexOptions.Compiled);
 
             foreach (var file in files)
             {
@@ -33,7 +36,7 @@ namespace ApiReferenceCleanup
                             outputLines.Add(line);
 
                             if (line.Contains("<![CDATA["))
-                                cdata = true;
+                                cdata = !line.Contains("]]>"); // if CDATA starts and ends on the same line, we ignore the line
 
                             continue;
                         }
@@ -51,22 +54,41 @@ namespace ApiReferenceCleanup
                     if (line.StartsWith("```"))
                         code = !code;
 
-                    if (code || !line.StartsWith(" "))
+                    if (code)
                     {
                         outputLines.Add(line);
 
                         continue;
                     }
 
-                    var fixedLine = line.Substring(1);
+                    if (!codeWithoutSpace.IsMatch(line))
+                    {
+                        outputLines.Add(line);
+
+                        continue;
+                    }
+
+                    string fixedLine = line;
+
+                    do
+                    {
+                        fixedLine = codeWithoutSpace.Replace(fixedLine, "$0 ");
+                    } while (codeWithoutSpace.IsMatch(fixedLine));
 
                     outputLines.Add(fixedLine);
 
                     changed = true;
                 }
 
+                if (cdata)
+                    throw new Exception();
+
                 if (changed)
+                {
+                    Console.WriteLine(file.Substring(path.Length));
+
                     File.WriteAllLines(file, outputLines);
+                }
             }
         }
     }
