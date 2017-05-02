@@ -14,7 +14,7 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            Regex codeWithoutSpace = new Regex(@"`[^ ]*(?<!`\|)`(?=\w)", RegexOptions.Compiled);
+            Regex codeWithoutSpace = new Regex(@"^(?:[^`]*(?<!\\)`[^`]+`)+(?=[a-zA-Z])(?!s\b)", RegexOptions.Compiled);
 
             foreach (var file in files)
             {
