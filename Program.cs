@@ -14,7 +14,7 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            Regex codeWithoutSpace = new Regex(@"^(?:[^`]*(?<!\\)`[^`]+`)+(?=[a-zA-Z])(?!s\b)", RegexOptions.Compiled);
+            Regex tagWithoutSpace = new Regex(@"(?:<[^>]+/>|<(\w+)(?:| [^>]+)>[^<]*</\1>)(?=[a-zA-Z])(?!(?:s|ing)\b)", RegexOptions.Compiled);
 
             foreach (var file in files)
             {
@@ -24,64 +24,21 @@ namespace ApiReferenceCleanup
 
                 var outputLines = new List<string>();
 
-                bool cdata = false;
-                bool code = false;
-
                 foreach (var line in inputLines)
                 {
-                    if (!code)
-                    {
-                        if (!cdata)
-                        {
-                            outputLines.Add(line);
-
-                            if (line.Contains("<![CDATA["))
-                                cdata = !line.Contains("]]>"); // if CDATA starts and ends on the same line, we ignore the line
-
-                            continue;
-                        }
-
-                        if (line.Contains("]]>"))
-                        {
-                            cdata = false;
-
-                            outputLines.Add(line);
-
-                            continue;
-                        }
-                    }
-
-                    if (line.StartsWith("```"))
-                        code = !code;
-
-                    if (code)
+                    if (!tagWithoutSpace.IsMatch(line))
                     {
                         outputLines.Add(line);
 
                         continue;
                     }
 
-                    if (!codeWithoutSpace.IsMatch(line))
-                    {
-                        outputLines.Add(line);
+                    var changedLine = tagWithoutSpace.Replace(line, "$0 ");
 
-                        continue;
-                    }
-
-                    string fixedLine = line;
-
-                    do
-                    {
-                        fixedLine = codeWithoutSpace.Replace(fixedLine, "$0 ");
-                    } while (codeWithoutSpace.IsMatch(fixedLine));
-
-                    outputLines.Add(fixedLine);
+                    outputLines.Add(changedLine);
 
                     changed = true;
                 }
-
-                if (cdata)
-                    throw new Exception();
 
                 if (changed)
                 {
