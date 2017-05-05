@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Xml.Linq;
 using static System.IO.SearchOption;
 
 namespace ApiReferenceCleanup
@@ -14,37 +14,49 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            Regex tagWithoutSpace = new Regex(@"(?:<[^>]+/>|<(\w+)(?:| [^>]+)>[^<]*</\1>)(?=[a-zA-Z])(?!(?:s|ing)\b)", RegexOptions.Compiled);
-
             foreach (var file in files)
             {
                 bool changed = false;
 
-                var inputLines = File.ReadAllLines(file);
+                var doc = XDocument.Load(file);
 
-                var outputLines = new List<string>();
-
-                foreach (var line in inputLines)
+                foreach (var element in doc.Descendants())
                 {
-                    if (!tagWithoutSpace.IsMatch(line))
+                    if (element.PreviousNode is XText previousText && char.IsLetterOrDigit(previousText.Value.Last()))
                     {
-                        outputLines.Add(line);
+                        previousText.Value = previousText.Value + " ";
 
-                        continue;
+                        changed = true;
                     }
 
-                    var changedLine = tagWithoutSpace.Replace(line, "$0 ");
+                    if (element.NextNode is XText nextText && char.IsLetterOrDigit(nextText.Value.First()))
+                    {
+                        nextText.Value = " " + nextText.Value;
 
-                    outputLines.Add(changedLine);
+                        changed = true;
+                    }
 
-                    changed = true;
+                    foreach (var attribute in element.Attributes())
+                    {
+                        var trimmed = attribute.Value.Trim();
+
+                        if (trimmed != attribute.Value)
+                        {
+                            attribute.Value = trimmed;
+
+                            changed = true;
+                        }
+                    }
                 }
 
                 if (changed)
                 {
                     Console.WriteLine(file.Substring(path.Length));
 
-                    File.WriteAllLines(file, outputLines);
+                    using (var fileStream = File.OpenWrite(file))
+                    {
+                        doc.Save(fileStream);
+                    }
                 }
             }
         }
