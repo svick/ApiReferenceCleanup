@@ -17,7 +17,8 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            Regex allowedLetterStart = new Regex(@"^(?:s|ing)\b", RegexOptions.Compiled);
+            Regex previousNeedingSpace = new Regex(@"[a-zA-Z,.]$", RegexOptions.Compiled);
+            Regex nextNeedingSpace = new Regex(@"^(?!(?:s|ing)\b)[a-zA-Z]", RegexOptions.Compiled);
 
             foreach (var file in files)
             {
@@ -27,14 +28,14 @@ namespace ApiReferenceCleanup
 
                 foreach (var element in doc.Descendants())
                 {
-                    if (element.PreviousNode is XText previousText && char.IsLetter(previousText.Value.Last()))
+                    if (element.PreviousNode is XText previousText && previousNeedingSpace.IsMatch(previousText.Value))
                     {
                         previousText.Value = previousText.Value + " ";
 
                         changed = true;
                     }
 
-                    if (element.NextNode is XText nextText && char.IsLetter(nextText.Value.First()) && !allowedLetterStart.IsMatch(nextText.Value))
+                    if (element.NextNode is XText nextText && nextNeedingSpace.IsMatch(nextText.Value))
                     {
                         nextText.Value = " " + nextText.Value;
 
