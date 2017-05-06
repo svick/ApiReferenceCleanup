@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using static System.IO.SearchOption;
 
@@ -14,6 +17,8 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
+            Regex allowedLetterStart = new Regex(@"^(?:s|ing)\b", RegexOptions.Compiled);
+
             foreach (var file in files)
             {
                 bool changed = false;
@@ -22,14 +27,14 @@ namespace ApiReferenceCleanup
 
                 foreach (var element in doc.Descendants())
                 {
-                    if (element.PreviousNode is XText previousText && char.IsLetterOrDigit(previousText.Value.Last()))
+                    if (element.PreviousNode is XText previousText && char.IsLetter(previousText.Value.Last()))
                     {
                         previousText.Value = previousText.Value + " ";
 
                         changed = true;
                     }
 
-                    if (element.NextNode is XText nextText && char.IsLetterOrDigit(nextText.Value.First()))
+                    if (element.NextNode is XText nextText && char.IsLetter(nextText.Value.First()) && !allowedLetterStart.IsMatch(nextText.Value))
                     {
                         nextText.Value = " " + nextText.Value;
 
@@ -53,9 +58,17 @@ namespace ApiReferenceCleanup
                 {
                     Console.WriteLine(file.Substring(path.Length));
 
-                    using (var fileStream = File.OpenWrite(file))
+                    var settings = new XmlWriterSettings
                     {
-                        doc.Save(fileStream);
+                        OmitXmlDeclaration = true,
+                        Indent = true,
+                        Encoding = new UTF8Encoding(false)
+                    };
+
+                    using (var fileStream = File.Open(file, FileMode.Create))
+                    using (var xmlWriter = XmlWriter.Create(fileStream, settings))
+                    {
+                        doc.Save(xmlWriter);
                     }
                 }
             }
