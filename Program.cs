@@ -17,14 +17,14 @@ namespace ApiReferenceCleanup
 
             var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
 
-            Regex previousNeedingSpace = new Regex(@"[a-zA-Z,]$", RegexOptions.Compiled);
+            Regex previousNeedingSpace = new Regex(@"[a-zA-Z,;)]$", RegexOptions.Compiled);
             Regex nextNeedingSpace = new Regex(@"^(?!(?:s|ing)\b)[a-zA-Z]", RegexOptions.Compiled);
 
             foreach (var file in files)
             {
                 bool changed = false;
 
-                var doc = XDocument.Load(file);
+                var doc = XDocument.Load(file, LoadOptions.PreserveWhitespace);
 
                 foreach (var element in doc.Descendants())
                 {
