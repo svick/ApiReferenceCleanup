@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml;
-using System.Xml.Linq;
 using static System.IO.SearchOption;
 
 namespace ApiReferenceCleanup
@@ -12,7 +10,7 @@ namespace ApiReferenceCleanup
     {
         static void Main()
         {
-            string path = @"E:\Users\Svick\git\core-docs\docs\framework\configure-apps\file-schema\wcf";
+            string path = @"E:\Users\Svick\git\core-docs\docs\";
 
             var files = Directory.EnumerateFiles(path, "*.md", AllDirectories);
 
@@ -24,32 +22,42 @@ namespace ApiReferenceCleanup
 
                 var outputLines = new List<string>();
 
-                var codeLines = new List<string>();
-
                 bool code = false;
 
                 foreach (var line in inputLines)
                 {
-                    if (line.StartsWith("```"))
+                    if (line.TrimStart(' ', '-').StartsWith("```"))
                     {
-                        if (code)
-                        {
-                            ProcessCodeBlock();
-                        }
-                        else
-                        {
-                            codeLines.Add(line);
-                        }
-
                         code = !code;
+
+                        outputLines.Add(line);
 
                         continue;
                     }
 
-                    var linesCollection = code ? codeLines : outputLines;
+                    if (!code)
+                    {
+                        outputLines.Add(line);
 
-                    linesCollection.Add(line);
+                        continue;
+                    }
+
+                    char nbsp = '\u00A0';
+
+                    string newLine = line;
+
+                    if (line.Contains(nbsp))
+                    {
+                        newLine = line.Replace(nbsp, ' ');
+
+                        changed = true;
+                    }
+
+                    outputLines.Add(newLine);
                 }
+
+                if (code)
+                    throw new Exception(file);
 
                 if (changed)
                 {
@@ -57,40 +65,6 @@ namespace ApiReferenceCleanup
 
                     File.WriteAllLines(file, outputLines);
                 }
-
-                void ProcessCodeBlock()
-                {
-                    string blockCode = string.Join("\n", codeLines.Skip(1));
-
-                    if (TryParseElement(blockCode, out var element))
-                    {
-                        changed = true;
-
-                        outputLines.Add("```xml");
-                        outputLines.Add(element.ToString());
-                    }
-                    else
-                    {
-                        outputLines.AddRange(codeLines);
-                    }
-                    outputLines.Add("```");
-
-                    codeLines.Clear();
-                }
-            }
-        }
-
-        static bool TryParseElement(string text, out XElement result)
-        {
-            try
-            {
-                result = XElement.Parse(text);
-                return true;
-            }
-            catch (XmlException)
-            {
-                result = null;
-                return false;
             }
         }
     }
