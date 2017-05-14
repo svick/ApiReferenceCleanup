@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using static System.IO.SearchOption;
 
 namespace ApiReferenceCleanup
@@ -9,9 +12,9 @@ namespace ApiReferenceCleanup
     {
         static void Main()
         {
-            string path = @"E:\Users\Svick\git\core-docs\xml";
+            string path = @"E:\Users\Svick\git\core-docs\docs\framework\configure-apps\file-schema\wcf";
 
-            var files = Directory.EnumerateFiles(path, "*.xml", AllDirectories);
+            var files = Directory.EnumerateFiles(path, "*.md", AllDirectories);
 
             foreach (var file in files)
             {
@@ -21,52 +24,73 @@ namespace ApiReferenceCleanup
 
                 var outputLines = new List<string>();
 
-                bool cdata = false;
+                var codeLines = new List<string>();
+
                 bool code = false;
 
                 foreach (var line in inputLines)
                 {
-                    if (!code)
-                    {
-                        if (!cdata)
-                        {
-                            outputLines.Add(line);
-
-                            if (line.Contains("<![CDATA["))
-                                cdata = true;
-
-                            continue;
-                        }
-
-                        if (line.Contains("]]>"))
-                        {
-                            cdata = false;
-
-                            outputLines.Add(line);
-
-                            continue;
-                        }
-                    }
-
                     if (line.StartsWith("```"))
-                        code = !code;
-
-                    if (code || !line.StartsWith(" "))
                     {
-                        outputLines.Add(line);
+                        if (code)
+                        {
+                            ProcessCodeBlock();
+                        }
+                        else
+                        {
+                            codeLines.Add(line);
+                        }
+
+                        code = !code;
 
                         continue;
                     }
 
-                    var fixedLine = line.Substring(1);
+                    var linesCollection = code ? codeLines : outputLines;
 
-                    outputLines.Add(fixedLine);
-
-                    changed = true;
+                    linesCollection.Add(line);
                 }
 
                 if (changed)
+                {
+                    Console.WriteLine(file.Substring(path.Length));
+
                     File.WriteAllLines(file, outputLines);
+                }
+
+                void ProcessCodeBlock()
+                {
+                    string blockCode = string.Join("\n", codeLines.Skip(1));
+
+                    if (TryParseElement(blockCode, out var element))
+                    {
+                        changed = true;
+
+                        outputLines.Add("```xml");
+                        outputLines.Add(element.ToString());
+                    }
+                    else
+                    {
+                        outputLines.AddRange(codeLines);
+                    }
+                    outputLines.Add("```");
+
+                    codeLines.Clear();
+                }
+            }
+        }
+
+        static bool TryParseElement(string text, out XElement result)
+        {
+            try
+            {
+                result = XElement.Parse(text);
+                return true;
+            }
+            catch (XmlException)
+            {
+                result = null;
+                return false;
             }
         }
     }
