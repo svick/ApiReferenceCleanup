@@ -5,6 +5,7 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using static System.IO.SearchOption;
+using static System.StringComparison;
 
 namespace ApiReferenceCleanup
 {
@@ -12,7 +13,7 @@ namespace ApiReferenceCleanup
     {
         static void Main()
         {
-            string path = @"E:\Users\Svick\git\core-docs\docs\framework\configure-apps\file-schema\wcf";
+            string path = @"E:\Users\Svick\git\core-docs\docs\framework\configure-apps\file-schema\wcf\";
 
             var files = Directory.EnumerateFiles(path, "*.md", AllDirectories);
 
@@ -30,7 +31,7 @@ namespace ApiReferenceCleanup
 
                 foreach (var line in inputLines)
                 {
-                    if (line.StartsWith("```"))
+                    if (line.TrimStart(' ', '-').StartsWith("```"))
                     {
                         if (code)
                         {
@@ -51,6 +52,9 @@ namespace ApiReferenceCleanup
                     linesCollection.Add(line);
                 }
 
+                if (code)
+                    throw new Exception(file);
+
                 if (changed)
                 {
                     Console.WriteLine(file.Substring(path.Length));
@@ -62,11 +66,15 @@ namespace ApiReferenceCleanup
                 {
                     string blockCode = string.Join("\n", codeLines.Skip(1));
 
+                    // TODO: preserve spaces in attributes
+                    // TODO: newlines between attributes when an element has several attributes
+
                     if (TryParseElement(blockCode, out var element))
                     {
                         changed = true;
 
-                        outputLines.Add("```xml");
+                        var codeBlockStart = codeLines[0];
+                        outputLines.Add(codeBlockStart.Substring(0, codeBlockStart.IndexOf("```", Ordinal)) + "```xml");
                         outputLines.Add(element.ToString());
                     }
                     else
