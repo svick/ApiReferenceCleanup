@@ -22,26 +22,8 @@ namespace ApiReferenceCleanup
 
                 var outputLines = new List<string>();
 
-                bool code = false;
-
                 foreach (var line in inputLines)
                 {
-                    if (line.TrimStart(' ', '-').StartsWith("```"))
-                    {
-                        code = !code;
-
-                        outputLines.Add(line);
-
-                        continue;
-                    }
-
-                    if (!code)
-                    {
-                        outputLines.Add(line);
-
-                        continue;
-                    }
-
                     char nbsp = '\u00A0';
 
                     string newLine = line;
@@ -55,9 +37,6 @@ namespace ApiReferenceCleanup
 
                     outputLines.Add(newLine);
                 }
-
-                if (code)
-                    throw new Exception(file);
 
                 if (changed)
                 {
