@@ -10,7 +10,7 @@ namespace ApiReferenceCleanup
     {
         static void Main()
         {
-            string path = @"E:\Users\Svick\git\core-docs\docs\";
+            string path = @"E:\Users\Svick\git\core-docs\";
 
             var files = Directory.EnumerateFiles(path, "*.md", AllDirectories);
 
